@@ -48,3 +48,16 @@ export const deleteAssignment = async (id: string) => {
   const response = await api.delete(`/assignments/${id}`);
   return response.data;
 };
+
+
+export const getCalendarAssignments = async (
+  startDate: string,
+  endDate: string
+): Promise<Assignment[]> => {
+  const response = await api.get("/assignments/calendar", {
+    params: { startDate, endDate },
+  });
+
+  return response.data.assignments;
+};
+

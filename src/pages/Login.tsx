@@ -1,7 +1,37 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { BookOpen, Mail, Lock, ArrowRight } from "lucide-react";
+import { loginUser } from "../service/auth";
+import { useAuth } from "../hooks/useAuth";
 
 function Login() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const data = await loginUser({ email, password });
+
+      login(data.user, data.accessToken);
+      navigate("/dashboard");
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message || "Login failed. Please try again."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#080d1b] px-5 py-12 text-white">
       <div className="w-full max-w-md">
@@ -18,7 +48,7 @@ function Login() {
             Sign in to continue your learning journey.
           </p>
 
-          <form className="mt-8 space-y-5">
+          <form onSubmit={handleLogin} className="mt-8 space-y-5">
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-300">
                 Email address
@@ -27,6 +57,9 @@ function Login() {
                 <Mail size={18} className="text-slate-500" />
                 <input
                   type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   className="w-full bg-transparent py-3.5 text-sm outline-none placeholder:text-slate-600"
                 />
@@ -41,6 +74,9 @@ function Login() {
                 <Lock size={18} className="text-slate-500" />
                 <input
                   type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
                   className="w-full bg-transparent py-3.5 text-sm outline-none placeholder:text-slate-600"
                 />
@@ -53,11 +89,19 @@ function Login() {
               </Link>
             </div>
 
+            {error && (
+              <p className="rounded-lg bg-red-500/10 p-3 text-sm text-red-400">
+                {error}
+              </p>
+            )}
+
             <button
-              type="button"
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-3.5 font-semibold hover:bg-blue-500"
+              type="submit"
+              disabled={loading}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 py-3.5 font-semibold hover:bg-blue-500 disabled:opacity-60"
             >
-              Sign In <ArrowRight size={18} />
+              {loading ? "Signing in..." : "Sign In"}
+              {!loading && <ArrowRight size={18} />}
             </button>
           </form>
 
@@ -68,10 +112,6 @@ function Login() {
             </Link>
           </p>
         </div>
-
-        <p className="mt-6 text-center text-xs text-slate-600">
-          © {new Date().getFullYear()} StudyBuddy
-        </p>
       </div>
     </main>
   );

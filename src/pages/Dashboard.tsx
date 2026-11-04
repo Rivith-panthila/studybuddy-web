@@ -6,241 +6,289 @@ import {
   Clock,
   CheckCircle2,
   CalendarDays,
-  Sparkles,
+  GraduationCap,
 } from "lucide-react";
+import api from "../service/api";
+import { useAuth } from "../hooks/useAuth";
 
-import {
-  getDashboardData,
-  type DashboardData,
-} from "../service/dashboard";
+interface Subject {
+  _id: string;
+  name: string;
+}
 
-import {
-  getTodayTasks,
-  type TodayStudyTask,
-} from "../service/studyPlan";
+interface Assignment {
+  _id: string;
+  title: string;
+  dueDate: string;
+  status: string;
+  subjectId?: Subject;
+}
+
+interface DashboardStats {
+  totalSubjects: number;
+  totalAssignments: number;
+  pendingAssignments: number;
+  completedAssignments: number;
+}
+
+interface TodayTask {
+  planId: string;
+  taskId: string;
+  title: string;
+  description: string;
+  duration: number;
+  status: string;
+}
 
 function Dashboard() {
-  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
+  const { user } = useAuth();
+
+  const [stats, setStats] = useState<DashboardStats>({
+    totalSubjects: 0,
+    totalAssignments: 0,
+    pendingAssignments: 0,
+    completedAssignments: 0,
+  });
+
+  const [upcomingAssignments, setUpcomingAssignments] =
+    useState<Assignment[]>([]);
+
+  const [todayTasks, setTodayTasks] = useState<TodayTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const [todayTasks, setTodayTasks] = useState<TodayStudyTask[]>([]);
-  const [taskError, setTaskError] = useState("");
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        const data = await getDashboardData();
-        setDashboard(data);
+        setLoading(true);
+        setError("");
+
+        const [dashboardResponse, tasksResponse] = await Promise.all([
+          api.get("/dashboard"),
+          api.get("/study-plans/today"),
+        ]);
+
+        setStats(dashboardResponse.data.stats);
+        setUpcomingAssignments(
+          dashboardResponse.data.upcomingAssignments
+        );
+        setTodayTasks(tasksResponse.data.tasks);
       } catch {
-        setError("Failed to load dashboard data. Please login again.");
+        setError("Unable to load dashboard data. Please try again.");
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchTodayTasks = async () => {
-      try {
-        const data = await getTodayTasks();
-        setTodayTasks(data.tasks);
-      } catch {
-        setTaskError("Failed to load today's study tasks.");
-      }
-    };
-
     fetchDashboard();
-    fetchTodayTasks();
   }, []);
 
-  const stats = [
+  const statCards = [
     {
       title: "Total Subjects",
-      value: dashboard?.stats.totalSubjects ?? 0,
+      value: stats.totalSubjects,
       icon: BookOpen,
       color: "text-blue-400",
       bg: "bg-blue-500/10",
     },
     {
       title: "Total Assignments",
-      value: dashboard?.stats.totalAssignments ?? 0,
+      value: stats.totalAssignments,
       icon: ClipboardList,
       color: "text-purple-400",
       bg: "bg-purple-500/10",
     },
     {
-      title: "Pending Tasks",
-      value: dashboard?.stats.pendingAssignments ?? 0,
+      title: "Pending",
+      value: stats.pendingAssignments,
       icon: Clock,
       color: "text-orange-400",
       bg: "bg-orange-500/10",
     },
     {
-      title: "Completed Tasks",
-      value: dashboard?.stats.completedAssignments ?? 0,
+      title: "Completed",
+      value: stats.completedAssignments,
       icon: CheckCircle2,
       color: "text-green-400",
       bg: "bg-green-500/10",
     },
   ];
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#080d1b] text-gray-300">
-        Loading dashboard...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-[#080d1b] p-6 text-red-400">
-        {error}
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#080d1b] p-6 text-white md:p-10">
       <div className="mx-auto max-w-7xl">
 
-        {/* Dashboard Header */}
-        <div className="mb-10">
-          <p className="mb-2 text-sm text-blue-400">STUDYBUDDY</p>
+        {/* Welcome */}
+        <div className="mb-8">
+          <p className="mb-2 text-sm text-blue-400">
+            STUDYBUDDY DASHBOARD
+          </p>
 
           <h1 className="text-3xl font-bold md:text-4xl">
-            Dashboard
+            Welcome back{user?.name ? `, ${user.name}` : ""}! 👋
           </h1>
 
           <p className="mt-2 text-gray-400">
-            Welcome back! Here's your study overview.
+            Here's an overview of your learning progress.
           </p>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => {
-            const Icon = stat.icon;
+        {error && (
+          <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+            {error}
+          </div>
+        )}
 
-            return (
-              <div
-                key={stat.title}
-                className="rounded-2xl border border-white/10 bg-[#111a2e] p-6"
-              >
-                <div className="mb-5 flex items-center justify-between">
-                  <p className="text-sm text-gray-400">
-                    {stat.title}
-                  </p>
+        {loading ? (
+          <p className="py-20 text-center text-gray-400">
+            Loading your dashboard...
+          </p>
+        ) : (
+          <>
+            {/* Statistics */}
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+              {statCards.map((card) => {
+                const Icon = card.icon;
 
-                  <div className={`rounded-xl p-3 ${stat.bg}`}>
-                    <Icon className={`h-5 w-5 ${stat.color}`} />
+                return (
+                  <div
+                    key={card.title}
+                    className="rounded-2xl border border-white/10 bg-[#111a2e] p-6"
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-gray-400">
+                        {card.title}
+                      </p>
+
+                      <div className={`rounded-xl p-3 ${card.bg}`}>
+                        <Icon className={`h-5 w-5 ${card.color}`} />
+                      </div>
+                    </div>
+
+                    <h2 className="mt-5 text-3xl font-bold">
+                      {card.value}
+                    </h2>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Main Sections */}
+            <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
+
+              {/* Upcoming Assignments */}
+              <section className="rounded-2xl border border-white/10 bg-[#111a2e] p-6">
+                <div className="mb-6 flex items-center gap-3">
+                  <div className="rounded-xl bg-orange-500/10 p-3">
+                    <CalendarDays className="h-5 w-5 text-orange-400" />
+                  </div>
+
+                  <div>
+                    <h2 className="text-lg font-semibold">
+                      Upcoming Assignments
+                    </h2>
+                    <p className="text-sm text-gray-400">
+                      Your next deadlines
+                    </p>
                   </div>
                 </div>
 
-                <h2 className="text-3xl font-bold">
-                  {stat.value}
-                </h2>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Dashboard Content */}
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-
-          {/* Upcoming Deadlines */}
-          <div className="rounded-2xl border border-white/10 bg-[#111a2e] p-6">
-            <div className="mb-5 flex items-center gap-3">
-              <CalendarDays className="h-5 w-5 text-blue-400" />
-
-              <h2 className="text-lg font-semibold">
-                Upcoming Deadlines
-              </h2>
-            </div>
-
-            {dashboard?.upcomingAssignments.length ? (
-              <div className="space-y-4">
-                {dashboard.upcomingAssignments.map((assignment) => (
-                  <div
-                    key={assignment._id}
-                    className="rounded-xl border border-white/10 p-4"
-                  >
-                    <h3 className="font-medium">
-                      {assignment.title}
-                    </h3>
-
-                    <p className="mt-1 text-sm text-gray-400">
-                      {assignment.subjectId?.name ?? "No subject"}
-                    </p>
-
-                    <p className="mt-2 text-sm text-blue-400">
-                      Due:{" "}
-                      {new Date(assignment.dueDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="py-8 text-center text-sm text-gray-500">
-                No upcoming deadlines yet.
-              </p>
-            )}
-          </div>
-
-          {/* Today's Study Tasks */}
-          <div className="rounded-2xl border border-white/10 bg-[#111a2e] p-6">
-            <div className="mb-5 flex items-center gap-3">
-              <Sparkles className="h-5 w-5 text-purple-400" />
-
-              <h2 className="text-lg font-semibold">
-                Today's Study Tasks
-              </h2>
-            </div>
-
-            {taskError ? (
-              <p className="py-8 text-center text-sm text-red-400">
-                {taskError}
-              </p>
-            ) : todayTasks.length > 0 ? (
-              <div className="space-y-4">
-                {todayTasks.map((task) => (
-                  <div
-                    key={task.taskId}
-                    className="rounded-xl border border-white/10 p-4"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="font-medium">
-                        {task.title}
-                      </h3>
-
-                      <span
-                        className={`rounded-full px-3 py-1 text-xs ${
-                          task.status === "Completed"
-                            ? "bg-green-500/10 text-green-400"
-                            : "bg-orange-500/10 text-orange-400"
-                        }`}
+                {upcomingAssignments.length > 0 ? (
+                  <div className="space-y-3">
+                    {upcomingAssignments.map((assignment) => (
+                      <div
+                        key={assignment._id}
+                        className="rounded-xl border border-white/10 bg-[#080d1b] p-4"
                       >
-                        {task.status}
-                      </span>
-                    </div>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <h3 className="font-medium">
+                              {assignment.title}
+                            </h3>
 
-                    <p className="mt-2 text-sm text-gray-400">
-                      {task.description}
-                    </p>
+                            <p className="mt-1 text-sm text-gray-400">
+                              {assignment.subjectId?.name || "Subject"}
+                            </p>
+                          </div>
 
-                    <p className="mt-3 text-sm text-blue-400">
-                      Duration: {task.duration} minutes
+                          <span className="text-xs text-orange-400">
+                            {new Date(
+                              assignment.dueDate
+                            ).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="py-8 text-center text-sm text-gray-500">
+                    No upcoming assignments.
+                  </p>
+                )}
+              </section>
+
+              {/* Today's Study Tasks */}
+              <section className="rounded-2xl border border-white/10 bg-[#111a2e] p-6">
+                <div className="mb-6 flex items-center gap-3">
+                  <div className="rounded-xl bg-blue-500/10 p-3">
+                    <GraduationCap className="h-5 w-5 text-blue-400" />
+                  </div>
+
+                  <div>
+                    <h2 className="text-lg font-semibold">
+                      Today's Study Plan
+                    </h2>
+                    <p className="text-sm text-gray-400">
+                      Your AI-generated study tasks
                     </p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="py-8 text-center text-sm text-gray-500">
-                No study tasks scheduled for today.
-              </p>
-            )}
-          </div>
+                </div>
 
-        </div>
+                {todayTasks.length > 0 ? (
+                  <div className="space-y-3">
+                    {todayTasks.map((task) => (
+                      <div
+                        key={`${task.planId}-${task.taskId}`}
+                        className="rounded-xl border border-white/10 bg-[#080d1b] p-4"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="font-medium">
+                              {task.title}
+                            </h3>
+
+                            <p className="mt-1 text-sm text-gray-400">
+                              {task.description}
+                            </p>
+
+                            <p className="mt-3 flex items-center gap-1 text-xs text-blue-400">
+                              <Clock className="h-3 w-3" />
+                              {task.duration} minutes
+                            </p>
+                          </div>
+
+                          <span
+                            className={`shrink-0 rounded-full px-3 py-1 text-xs ${
+                              task.status === "Completed"
+                                ? "bg-green-500/10 text-green-400"
+                                : "bg-orange-500/10 text-orange-400"
+                            }`}
+                          >
+                            {task.status}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="py-8 text-center text-sm text-gray-500">
+                    No study tasks scheduled for today.
+                  </p>
+                )}
+              </section>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

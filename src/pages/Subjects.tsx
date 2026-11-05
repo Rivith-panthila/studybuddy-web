@@ -1,12 +1,13 @@
-
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   BookOpen,
   Plus,
   Pencil,
   Trash2,
   X,
-  Save,
+  Loader2,
+  ArrowLeft,
 } from "lucide-react";
 
 import {
@@ -25,25 +26,28 @@ function Subjects() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
-  const fetchSubjects = async () => {
+  const loadSubjects = async () => {
     try {
+      setLoading(true);
       setError("");
+
       const data = await getSubjects();
       setSubjects(data);
-    } catch {
-      setError("Failed to load subjects. Please try again.");
+    } catch (err: any) {
+      setError(
+        err.response?.data?.message || "Failed to load subjects."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchSubjects();
+    loadSubjects();
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const trimmedName = subjectName.trim();
@@ -56,26 +60,18 @@ function Subjects() {
     try {
       setSaving(true);
       setError("");
-      setSuccess("");
 
       if (editingId) {
         const response = await updateSubject(editingId, trimmedName);
 
-        setSubjects((prev) =>
-          prev.map((subject) =>
-            subject._id === editingId
-              ? response.subject
-              : subject
+        setSubjects((previous) =>
+          previous.map((subject) =>
+            subject._id === editingId ? response.subject : subject
           )
         );
-
-        setSuccess("Subject updated successfully!");
       } else {
         const response = await createSubject(trimmedName);
-
-        setSubjects((prev) => [...prev, response.subject]);
-
-        setSuccess("Subject added successfully!");
+        setSubjects((previous) => [...previous, response.subject]);
       }
 
       setSubjectName("");
@@ -93,10 +89,9 @@ function Subjects() {
     setSubjectName(subject.name);
     setEditingId(subject._id);
     setError("");
-    setSuccess("");
   };
 
-  const handleCancel = () => {
+  const handleCancelEdit = () => {
     setSubjectName("");
     setEditingId(null);
     setError("");
@@ -111,19 +106,11 @@ function Subjects() {
 
     try {
       setError("");
-      setSuccess("");
-
       await deleteSubject(id);
 
-      setSubjects((prev) =>
-        prev.filter((subject) => subject._id !== id)
+      setSubjects((previous) =>
+        previous.filter((subject) => subject._id !== id)
       );
-
-      if (editingId === id) {
-        handleCancel();
-      }
-
-      setSuccess("Subject deleted successfully!");
     } catch (err: any) {
       setError(
         err.response?.data?.message || "Failed to delete subject."
@@ -132,158 +119,144 @@ function Subjects() {
   };
 
   return (
-    <div className="min-h-screen bg-[#080d1b] p-6 text-white md:p-10">
-      <div className="mx-auto max-w-7xl">
+    <div className="min-h-screen bg-[#080d1b] px-6 py-8 text-white md:px-10">
+      <div className="mx-auto max-w-5xl">
+        <Link
+          to="/dashboard"
+          className="mb-8 inline-flex items-center gap-2 text-sm text-gray-400 transition hover:text-white"
+        >
+          <ArrowLeft size={17} />
+          Back to Dashboard
+        </Link>
 
-        {/* Header */}
-        <div className="mb-10">
-          <p className="mb-2 text-sm text-blue-400">STUDYBUDDY</p>
-
-          <h1 className="text-3xl font-bold md:text-4xl">
-            My Subjects
-          </h1>
-
-          <p className="mt-2 text-gray-400">
-            Organize and manage your study subjects.
-          </p>
+        <div className="mb-8">
+          <div className="mb-3 flex items-center gap-3">
+            <div className="rounded-xl bg-purple-500/15 p-3 text-purple-400">
+              <BookOpen size={25} />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold">My Subjects</h1>
+              <p className="mt-1 text-sm text-gray-400">
+                Organize and manage your study subjects.
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Add / Edit Subject Form */}
         <div className="mb-8 rounded-2xl border border-white/10 bg-[#111a2e] p-6">
-          <h2 className="mb-5 flex items-center gap-2 text-lg font-semibold">
-            {editingId ? (
-              <Pencil className="h-5 w-5 text-blue-400" />
-            ) : (
-              <Plus className="h-5 w-5 text-blue-400" />
-            )}
-
-            {editingId ? "Edit Subject" : "Add New Subject"}
+          <h2 className="mb-4 text-lg font-semibold">
+            {editingId ? "Edit Subject" : "Add a New Subject"}
           </h2>
 
           <form
             onSubmit={handleSubmit}
-            className="flex flex-col gap-4 sm:flex-row"
+            className="flex flex-col gap-3 sm:flex-row"
           >
             <input
               type="text"
               value={subjectName}
               onChange={(e) => setSubjectName(e.target.value)}
-              placeholder="Enter subject name"
-              maxLength={100}
-              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#080d1b] px-4 py-3 text-white outline-none transition focus:border-blue-500"
+              placeholder="Enter subject name..."
+              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#080d1b] px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-purple-500"
             />
 
-            <div className="flex gap-3">
-              <button
-                type="submit"
-                disabled={saving}
-                className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 font-medium transition hover:bg-blue-500 disabled:opacity-50"
-              >
-                {editingId ? (
-                  <Save className="h-4 w-4" />
-                ) : (
-                  <Plus className="h-4 w-4" />
-                )}
-
-                {saving
-                  ? "Saving..."
-                  : editingId
-                    ? "Update"
-                    : "Add Subject"}
-              </button>
-
-              {editingId && (
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-gray-300 transition hover:bg-white/5"
-                >
-                  <X className="h-4 w-4" />
-                  Cancel
-                </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-6 py-3 font-medium transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving ? (
+                <Loader2 size={18} className="animate-spin" />
+              ) : (
+                <Plus size={18} />
               )}
-            </div>
+              {editingId ? "Update Subject" : "Add Subject"}
+            </button>
+
+            {editingId && (
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                className="flex items-center justify-center gap-2 rounded-xl border border-white/10 px-5 py-3 text-gray-300 transition hover:bg-white/5"
+              >
+                <X size={18} />
+                Cancel
+              </button>
+            )}
           </form>
 
           {error && (
-            <p className="mt-4 text-sm text-red-400">{error}</p>
-          )}
-
-          {success && (
-            <p className="mt-4 text-sm text-green-400">{success}</p>
+            <p className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+              {error}
+            </p>
           )}
         </div>
 
-        {/* Subjects List */}
-        <div className="rounded-2xl border border-white/10 bg-[#111a2e] p-6">
-          <div className="mb-6 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">
-              All Subjects
-            </h2>
+        <div className="mb-5 flex items-center justify-between">
+          <h2 className="text-xl font-semibold">All Subjects</h2>
+          <span className="rounded-full bg-purple-500/15 px-3 py-1 text-sm text-purple-300">
+            {subjects.length} Subjects
+          </span>
+        </div>
 
-            <span className="rounded-full bg-blue-500/10 px-4 py-2 text-sm text-blue-400">
-              {subjects.length} Subjects
-            </span>
+        {loading ? (
+          <div className="flex justify-center py-16">
+            <Loader2 className="animate-spin text-purple-400" size={32} />
           </div>
-
-          {loading ? (
-            <p className="py-10 text-center text-gray-400">
-              Loading subjects...
+        ) : subjects.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-white/15 bg-[#111a2e]/50 px-6 py-16 text-center">
+            <BookOpen
+              size={40}
+              className="mx-auto mb-4 text-gray-500"
+            />
+            <h3 className="mb-2 text-lg font-semibold">
+              No subjects yet
+            </h3>
+            <p className="text-sm text-gray-400">
+              Add your first subject using the form above.
             </p>
-          ) : subjects.length === 0 ? (
-            <div className="py-12 text-center">
-              <BookOpen className="mx-auto mb-4 h-12 w-12 text-gray-600" />
-
-              <h3 className="text-lg font-medium text-gray-300">
-                No subjects yet
-              </h3>
-
-              <p className="mt-2 text-sm text-gray-500">
-                Add your first subject to get started.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {subjects.map((subject) => (
-                <div
-                  key={subject._id}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-[#080d1b] p-5"
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="rounded-xl bg-blue-500/10 p-3">
-                      <BookOpen className="h-5 w-5 text-blue-400" />
-                    </div>
-
-                    <h3 className="truncate font-medium">
-                      {subject.name}
-                    </h3>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {subjects.map((subject) => (
+              <div
+                key={subject._id}
+                className="rounded-2xl border border-white/10 bg-[#111a2e] p-5 transition hover:border-purple-500/40"
+              >
+                <div className="mb-5 flex items-start justify-between">
+                  <div className="rounded-xl bg-purple-500/15 p-3 text-purple-400">
+                    <BookOpen size={22} />
                   </div>
 
-                  <div className="flex shrink-0 gap-2">
+                  <div className="flex gap-2">
                     <button
-                      type="button"
                       onClick={() => handleEdit(subject)}
                       title="Edit subject"
-                      className="rounded-lg p-2 text-blue-400 transition hover:bg-blue-500/10"
+                      className="rounded-lg p-2 text-gray-400 transition hover:bg-blue-500/10 hover:text-blue-400"
                     >
-                      <Pencil className="h-4 w-4" />
+                      <Pencil size={17} />
                     </button>
 
                     <button
-                      type="button"
                       onClick={() => handleDelete(subject._id)}
                       title="Delete subject"
-                      className="rounded-lg p-2 text-red-400 transition hover:bg-red-500/10"
+                      className="rounded-lg p-2 text-gray-400 transition hover:bg-red-500/10 hover:text-red-400"
                     >
-                      <Trash2 className="h-4 w-4" />
+                      <Trash2 size={17} />
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
 
+                <h3 className="break-words text-lg font-semibold">
+                  {subject.name}
+                </h3>
+                <p className="mt-2 text-xs text-gray-500">
+                  Study subject
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

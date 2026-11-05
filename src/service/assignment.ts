@@ -1,13 +1,13 @@
-
 import api from "./api";
 
 export interface Assignment {
   _id: string;
-  title: string;
-  subjectId: {
+  userId: string;
+  subjectId: string | {
     _id: string;
     name: string;
   };
+  title: string;
   dueDate: string;
   status: "Pending" | "Completed";
   createdAt?: string;
@@ -20,7 +20,7 @@ export interface AssignmentData {
   dueDate: string;
 }
 
-export interface UpdateAssignmentData {
+export interface AssignmentUpdateData {
   title?: string;
   dueDate?: string;
   status?: "Pending" | "Completed";
@@ -38,7 +38,7 @@ export const createAssignment = async (data: AssignmentData) => {
 
 export const updateAssignment = async (
   id: string,
-  data: UpdateAssignmentData
+  data: AssignmentUpdateData
 ) => {
   const response = await api.put(`/assignments/${id}`, data);
   return response.data;
@@ -48,7 +48,6 @@ export const deleteAssignment = async (id: string) => {
   const response = await api.delete(`/assignments/${id}`);
   return response.data;
 };
-
 
 export const getCalendarAssignments = async (
   startDate: string,
@@ -60,4 +59,3 @@ export const getCalendarAssignments = async (
 
   return response.data.assignments;
 };
-

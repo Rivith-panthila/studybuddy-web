@@ -5,7 +5,9 @@ import Register from "../pages/Register";
 import ForgotPassword from "../pages/ForgotPassword";
 import ResetPassword from "../pages/ResetPassword";
 import Calendar from "../pages/Calendar";
-
+import Dashboard from "../pages/Dashboard";
+import Subjects from "../pages/Subjects";
+import Assignments from "../pages/Assignments";
 const router = createBrowserRouter([
   {
     path: "/",
@@ -29,8 +31,16 @@ const router = createBrowserRouter([
   },
 
   { path: "/calendar", element: <Calendar />
-    
+
    },
+
+   { path: "/dashboard", element: <Dashboard /> },
+
+   { path: "/subjects", element: <Subjects /> },
+
+   { path: "/assignments", element: <Assignments /> },
+
+
 ]);
 
 export default router;

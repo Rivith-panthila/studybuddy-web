@@ -57,31 +57,48 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        setLoading(true);
-        setError("");
+ 
+useEffect(() => {
+  const fetchDashboard = async () => {
+    try {
+      setLoading(true);
+      setError("");
 
-        const [dashboardResponse, tasksResponse] = await Promise.all([
-          api.get("/dashboard"),
-          api.get("/study-plans/today"),
-        ]);
+      const [dashboardResponse, tasksResponse] = await Promise.all([
+        api.get("/dashboard"),
+        api.get("/study-plans/today"),
+      ]);
 
-        setStats(dashboardResponse.data.stats);
-        setUpcomingAssignments(
-          dashboardResponse.data.upcomingAssignments
-        );
-        setTodayTasks(tasksResponse.data.tasks);
-      } catch {
-        setError("Unable to load dashboard data. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
+      console.log("Dashboard response:", dashboardResponse.data);
+      console.log("Today's tasks response:", tasksResponse.data);
 
-    fetchDashboard();
-  }, []);
+      const dashboardData = dashboardResponse.data;
+
+      setStats(
+        dashboardData?.stats ?? {
+          totalSubjects: 0,
+          totalAssignments: 0,
+          pendingAssignments: 0,
+          completedAssignments: 0,
+        }
+      );
+
+      setUpcomingAssignments(
+        dashboardData?.upcomingAssignments ?? []
+      );
+
+      setTodayTasks(tasksResponse.data?.tasks ?? []);
+    } catch (error) {
+      console.error("Dashboard loading error:", error);
+      setError("Unable to load dashboard data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchDashboard();
+}, []);
+
 
   const statCards = [
     {

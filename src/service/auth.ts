@@ -54,3 +54,12 @@ export const changePassword = async (
   );
   return response.data;
 };
+
+export const updateProfile = async (data: {
+  name?: string;
+  bio?: string;
+  profileImage?: string;
+}) => {
+  const response = await api.put("/auth/profile", data);
+  return response.data;
+};

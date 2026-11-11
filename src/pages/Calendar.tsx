@@ -7,16 +7,23 @@ import {
   Clock,
 } from "lucide-react";
 
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+
 import {
-  getCalendarAssignments,
-  type Assignment,
-} from "../service/assignment";
+  fetchCalendarAssignments,
+  clearCalendarError,
+} from "../features/calendar/calendarSlice";
 
 function Calendar() {
+  const dispatch = useAppDispatch();
+
+  const {
+    assignments,
+    loading,
+    error,
+  } = useAppSelector((state) => state.calendar);
+
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -27,34 +34,21 @@ function Calendar() {
   });
 
   useEffect(() => {
-    const fetchAssignments = async () => {
-      try {
-        setLoading(true);
-        setError("");
+    const startDate = new Date(year, month, 1);
+    const endDate = new Date(year, month + 1, 0);
 
-        const startDate = new Date(year, month, 1);
-        const endDate = new Date(year, month + 1, 0);
+    const formatDate = (date: Date) =>
+      `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 
-        const formatDate = (date: Date) =>
-          `${date.getFullYear()}-${String(
-            date.getMonth() + 1
-          ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-
-        const data = await getCalendarAssignments(
-          formatDate(startDate),
-          formatDate(endDate)
-        );
-
-        setAssignments(data);
-      } catch {
-        setError("Failed to load calendar assignments.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAssignments();
-  }, [year, month]);
+    dispatch(
+      fetchCalendarAssignments({
+        startDate: formatDate(startDate),
+        endDate: formatDate(endDate),
+      })
+    );
+  }, [dispatch, year, month]);
 
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -153,7 +147,35 @@ function Calendar() {
           </div>
 
           {error && (
-            <p className="mb-4 text-sm text-red-400">{error}</p>
+            <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400">
+              <span>{error}</span>
+
+              <button
+                onClick={() => {
+                  dispatch(clearCalendarError());
+
+                  const start = new Date(year, month, 1);
+                  const end = new Date(year, month + 1, 0);
+
+                  const formatDate = (date: Date) =>
+                    `${date.getFullYear()}-${String(
+                      date.getMonth() + 1
+                    ).padStart(2, "0")}-${String(
+                      date.getDate()
+                    ).padStart(2, "0")}`;
+
+                  dispatch(
+                    fetchCalendarAssignments({
+                      startDate: formatDate(start),
+                      endDate: formatDate(end),
+                    })
+                  );
+                }}
+                className="shrink-0 underline"
+              >
+                Try again
+              </button>
+            </div>
           )}
 
           {/* Weekdays */}
@@ -270,14 +292,20 @@ function Calendar() {
                     </h3>
 
                     <p className="mt-1 text-sm text-gray-400">
-                      {assignment.subjectId?.name || "No subject"}
+                      {typeof assignment.subjectId === "object" &&
+                      assignment.subjectId !== null
+                        ? assignment.subjectId.name
+                        : "No subject"}
                     </p>
                   </div>
 
                   <div className="flex items-center gap-3">
                     <span className="flex items-center gap-1 text-xs text-blue-400">
                       <Clock className="h-3 w-3" />
-                      {new Date(assignment.dueDate).toLocaleDateString()}
+
+                      {new Date(
+                        assignment.dueDate
+                      ).toLocaleDateString()}
                     </span>
 
                     <span
@@ -301,7 +329,6 @@ function Calendar() {
             )
           )}
         </div>
-
       </div>
     </div>
   );

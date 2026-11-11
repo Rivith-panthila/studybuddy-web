@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -9,10 +10,13 @@ import {
 } from "lucide-react";
 import { registerUser } from "../service/auth";
 import { useAuth } from "../hooks/useAuth";
+import { useAppDispatch } from "../store/hooks";
+import { loginSuccess } from "../features/auth/authSlice";
 
 function Register() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const dispatch = useAppDispatch();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -29,6 +33,14 @@ function Register() {
       const data = await registerUser({ name, email, password });
 
       login(data.user, data.accessToken);
+
+      dispatch(
+        loginSuccess({
+          user: data.user,
+          accessToken: data.accessToken,
+        })
+      );
+
       navigate("/dashboard");
     } catch (err: any) {
       setError(

@@ -1,4 +1,6 @@
+
 import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { Link } from "react-router-dom";
 import {
   ClipboardList,
@@ -12,104 +14,86 @@ import {
   Clock,
 } from "lucide-react";
 
-import {
-  getAssignments,
-  createAssignment,
-  updateAssignment,
-  deleteAssignment,
-  type Assignment,
-} from "../service/assignment";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 
-import { getSubjects, type Subject } from "../service/subject";
+import {
+  fetchAssignments,
+  addAssignment,
+  editAssignment,
+  removeAssignment,
+  clearAssignmentsError,
+} from "../features/assignments/assignmentsSlice";
+
+import { fetchSubjects } from "../features/subjects/subjectsSlice";
+
+import type { Assignment } from "../service/assignment";
 
 function Assignments() {
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const dispatch = useAppDispatch();
+
+  const { assignments, loading, error } = useAppSelector(
+    (state) => state.assignments
+  );
+
+  const { subjects } = useAppSelector(
+    (state) => state.subjects
+  );
 
   const [title, setTitle] = useState("");
   const [subjectId, setSubjectId] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const [assignmentData, subjectData] = await Promise.all([
-        getAssignments(),
-        getSubjects(),
-      ]);
-
-      setAssignments(assignmentData);
-      setSubjects(subjectData);
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Failed to load assignments."
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [deletingId, setDeletingId] = useState("");
 
   useEffect(() => {
-    loadData();
-  }, []);
+    dispatch(fetchAssignments());
+    dispatch(fetchSubjects());
+  }, [dispatch]);
 
   const resetForm = () => {
     setTitle("");
     setSubjectId("");
     setDueDate("");
     setEditingId(null);
+    dispatch(clearAssignmentsError());
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!title.trim() || !subjectId || !dueDate) {
-      setError("Please fill in all fields.");
       return;
     }
 
     try {
       setSaving(true);
-      setError("");
+      dispatch(clearAssignmentsError());
 
       if (editingId) {
-        const response = await updateAssignment(editingId, {
-          title: title.trim(),
-          dueDate,
-        });
-
-        setAssignments((previous) =>
-          previous.map((item) =>
-            item._id === editingId
-              ? response.assignment
-              : item
-          )
-        );
+        await dispatch(
+          editAssignment({
+            id: editingId,
+            data: {
+              title: title.trim(),
+              dueDate,
+            },
+          })
+        ).unwrap();
       } else {
-        const response = await createAssignment({
-          title: title.trim(),
-          subjectId,
-          dueDate,
-        });
-
-        setAssignments((previous) => [
-          ...previous,
-          response.assignment,
-        ]);
+        await dispatch(
+          addAssignment({
+            title: title.trim(),
+            subjectId,
+            dueDate,
+          })
+        ).unwrap();
       }
 
       resetForm();
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Something went wrong."
-      );
+    } catch {
+      // Redux slice stores the error.
     } finally {
       setSaving(false);
     }
@@ -125,48 +109,44 @@ function Assignments() {
     setTitle(assignment.title);
     setSubjectId(selectedSubject || "");
     setDueDate(assignment.dueDate.slice(0, 10));
-    setError("");
+
+    dispatch(clearAssignmentsError());
   };
 
   const handleStatusChange = async (
     assignment: Assignment,
     status: "Pending" | "Completed"
   ) => {
+    dispatch(clearAssignmentsError());
+
     try {
-      setError("");
-
-      const response = await updateAssignment(assignment._id, {
-        status,
-      });
-
-      setAssignments((previous) =>
-        previous.map((item) =>
-          item._id === assignment._id
-            ? response.assignment
-            : item
-        )
-      );
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Failed to update status."
-      );
+      await dispatch(
+        editAssignment({
+          id: assignment._id,
+          data: { status },
+        })
+      ).unwrap();
+    } catch {
+      // Redux slice stores the error.
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm("Delete this assignment?")) return;
 
-    try {
-      setError("");
-      await deleteAssignment(id);
+    dispatch(clearAssignmentsError());
 
-      setAssignments((previous) =>
-        previous.filter((item) => item._id !== id)
-      );
-    } catch (err: any) {
-      setError(
-        err.response?.data?.message || "Failed to delete assignment."
-      );
+    try {
+      setDeletingId(id);
+      await dispatch(removeAssignment(id)).unwrap();
+
+      if (editingId === id) {
+        resetForm();
+      }
+    } catch {
+      // Redux slice stores the error.
+    } finally {
+      setDeletingId("");
     }
   };
 
@@ -176,8 +156,9 @@ function Assignments() {
     }
 
     return (
-      subjects.find((subject) => subject._id === assignment.subjectId)
-        ?.name || "Subject"
+      subjects.find(
+        (subject) => subject._id === assignment.subjectId
+      )?.name || "Subject"
     );
   };
 
@@ -196,6 +177,7 @@ function Assignments() {
           <div className="rounded-xl bg-blue-500/15 p-3 text-blue-400">
             <ClipboardList size={26} />
           </div>
+
           <div>
             <h1 className="text-3xl font-bold">My Assignments</h1>
             <p className="mt-1 text-sm text-gray-400">
@@ -233,6 +215,7 @@ function Assignments() {
                   className="rounded-xl border border-white/10 bg-[#080d1b] px-4 py-3 text-white outline-none focus:border-blue-500"
                 >
                   <option value="">Select subject</option>
+
                   {subjects.map((subject) => (
                     <option key={subject._id} value={subject._id}>
                       {subject.name}
@@ -259,6 +242,7 @@ function Assignments() {
                   ) : (
                     <Plus size={18} />
                   )}
+
                   {editingId ? "Update Assignment" : "Add Assignment"}
                 </button>
 
@@ -285,6 +269,7 @@ function Assignments() {
 
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-semibold">All Assignments</h2>
+
           <span className="rounded-full bg-blue-500/15 px-3 py-1 text-sm text-blue-300">
             {assignments.length} Assignments
           </span>
@@ -300,9 +285,11 @@ function Assignments() {
               size={40}
               className="mx-auto mb-4 text-gray-500"
             />
+
             <h3 className="mb-2 text-lg font-semibold">
               No assignments yet
             </h3>
+
             <p className="text-sm text-gray-400">
               Add your first assignment using the form above.
             </p>
@@ -319,6 +306,7 @@ function Assignments() {
                     <h3 className="text-lg font-semibold">
                       {assignment.title}
                     </h3>
+
                     <p className="mt-1 text-sm text-gray-400">
                       {getSubjectName(assignment)}
                     </p>
@@ -336,6 +324,7 @@ function Assignments() {
                     ) : (
                       <Clock size={13} />
                     )}
+
                     {assignment.status}
                   </span>
                 </div>
@@ -371,10 +360,15 @@ function Assignments() {
 
                     <button
                       onClick={() => handleDelete(assignment._id)}
+                      disabled={deletingId === assignment._id}
                       title="Delete assignment"
-                      className="rounded-lg p-2 text-gray-400 hover:bg-red-500/10 hover:text-red-400"
+                      className="rounded-lg p-2 text-gray-400 hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
                     >
-                      <Trash2 size={17} />
+                      {deletingId === assignment._id ? (
+                        <Loader2 size={17} className="animate-spin" />
+                      ) : (
+                        <Trash2 size={17} />
+                      )}
                     </button>
                   </div>
                 </div>

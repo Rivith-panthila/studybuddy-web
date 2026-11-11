@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   BookOpen,
   ClipboardList,
@@ -8,97 +8,30 @@ import {
   CalendarDays,
   GraduationCap,
 } from "lucide-react";
-import api from "../service/api";
-import { useAuth } from "../hooks/useAuth";
 
-interface Subject {
-  _id: string;
-  name: string;
-}
+import { useAppDispatch, useAppSelector } from "../store/hooks";
 
-interface Assignment {
-  _id: string;
-  title: string;
-  dueDate: string;
-  status: string;
-  subjectId?: Subject;
-}
-
-interface DashboardStats {
-  totalSubjects: number;
-  totalAssignments: number;
-  pendingAssignments: number;
-  completedAssignments: number;
-}
-
-interface TodayTask {
-  planId: string;
-  taskId: string;
-  title: string;
-  description: string;
-  duration: number;
-  status: string;
-}
+import {
+  fetchDashboard,
+  clearDashboardError,
+} from "../features/dashboard/dashboardSlice";
 
 function Dashboard() {
-  const { user } = useAuth();
+  const dispatch = useAppDispatch();
 
-  const [stats, setStats] = useState<DashboardStats>({
-    totalSubjects: 0,
-    totalAssignments: 0,
-    pendingAssignments: 0,
-    completedAssignments: 0,
-  });
+  const user = useAppSelector((state) => state.auth.user);
 
-  const [upcomingAssignments, setUpcomingAssignments] =
-    useState<Assignment[]>([]);
+  const {
+    stats,
+    upcomingAssignments,
+    todayTasks,
+    loading,
+    error,
+  } = useAppSelector((state) => state.dashboard);
 
-  const [todayTasks, setTodayTasks] = useState<TodayTask[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
- 
-useEffect(() => {
-  const fetchDashboard = async () => {
-    try {
-      setLoading(true);
-      setError("");
-
-      const [dashboardResponse, tasksResponse] = await Promise.all([
-        api.get("/dashboard"),
-        api.get("/study-plans/today"),
-      ]);
-
-      console.log("Dashboard response:", dashboardResponse.data);
-      console.log("Today's tasks response:", tasksResponse.data);
-
-      const dashboardData = dashboardResponse.data;
-
-      setStats(
-        dashboardData?.stats ?? {
-          totalSubjects: 0,
-          totalAssignments: 0,
-          pendingAssignments: 0,
-          completedAssignments: 0,
-        }
-      );
-
-      setUpcomingAssignments(
-        dashboardData?.upcomingAssignments ?? []
-      );
-
-      setTodayTasks(tasksResponse.data?.tasks ?? []);
-    } catch (error) {
-      console.error("Dashboard loading error:", error);
-      setError("Unable to load dashboard data. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchDashboard();
-}, []);
-
+  useEffect(() => {
+    dispatch(fetchDashboard());
+  }, [dispatch]);
 
   const statCards = [
     {
@@ -151,8 +84,18 @@ useEffect(() => {
         </div>
 
         {error && (
-          <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
-            {error}
+          <div className="mb-6 flex items-center justify-between gap-3 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
+            <span>{error}</span>
+
+            <button
+              onClick={() => {
+                dispatch(clearDashboardError());
+                dispatch(fetchDashboard());
+              }}
+              className="shrink-0 underline hover:text-red-300"
+            >
+              Try again
+            </button>
           </div>
         )}
 

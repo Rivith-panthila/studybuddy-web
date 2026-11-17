@@ -12,6 +12,11 @@
   --border: #E5EBDD;
   --accent: #718B68;
   --muted: #879183;
+  --soft-bg: #F0F4EB;
+  --soft-card: #FAFBF8;
+  --soft-green: #EAF2E5;
+  --soft-green-strong: #DCE8D5;
+  --secondary-text: #52634F;
 }
 
 :root.dark {
@@ -21,6 +26,11 @@
   --border: #3B4B3D;
   --accent: #A8BE9D;
   --muted: #B0BBAE;
+  --soft-bg: #202D23;
+  --soft-card: #29382D;
+  --soft-green: #304333;
+  --soft-green-strong: #3B5140;
+  --secondary-text: #C4D2BE;
   color-scheme: dark;
 }
 
@@ -48,20 +58,64 @@ body {
   color: var(--text);
 }
 
-.dark .bg-white {
+.dark .bg-white,
+.dark [class~="bg-white/80"],
+.dark [class~="bg-white/70"] {
   background-color: var(--card) !important;
 }
 
-.dark .text-gray-900,
-.dark .text-gray-800,
-.dark .text-gray-700 {
+.dark [class~="bg-[#F5F7F0]"],
+.dark [class~="bg-[#F5F7F0]/95"] {
+  background-color: var(--bg) !important;
+}
+
+.dark [class~="bg-[#F0F4EB]"] {
+  background-color: var(--soft-bg) !important;
+}
+
+.dark [class~="bg-[#FAFBF8]"] {
+  background-color: var(--soft-card) !important;
+}
+
+.dark [class~="bg-[#EAF2E5]"] {
+  background-color: var(--soft-green) !important;
+}
+
+.dark [class~="bg-[#DCE8D5]"] {
+  background-color: var(--soft-green-strong) !important;
+}
+
+.dark [class~="text-[#374638]"],
+.dark [class~="text-[#52634F]"],
+.dark [class~="text-[#52634F]"] {
   color: var(--text) !important;
 }
 
-.dark .border-gray-100,
-.dark .border-gray-200,
-.dark .border-gray-300 {
+.dark [class~="text-[#526D4D]"],
+.dark [class~="text-[#687666]"] {
+  color: var(--secondary-text) !important;
+}
+
+.dark [class~="text-[#758172]"],
+.dark [class~="text-[#879183]"],
+.dark [class~="text-[#697566]"] {
+  color: var(--muted) !important;
+}
+
+.dark [class~="border-[#E5EBDD]"],
+.dark [class~="border-[#DCE8D5]"],
+.dark [class~="border-[#C9D7C1]"] {
   border-color: var(--border) !important;
+}
+
+.dark [class~="border-[#AFC3A5]"],
+.dark [class~="border-[#B9CCAF]"] {
+  border-color: var(--accent) !important;
+}
+
+.dark [class~="hover:bg-[#F0F4EB]"]:hover,
+.dark [class~="hover:bg-[#FAFBF8]"]:hover {
+  background-color: var(--soft-bg) !important;
 }
 
 button,

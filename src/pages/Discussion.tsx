@@ -1,5 +1,7 @@
 
 import { useEffect, useRef, useState } from "react";
+import { useSelector } from "react-redux";
+import type { RootState } from "../store/store";
 import {
   MessageSquare,
   Paperclip,
@@ -14,9 +16,18 @@ import {
   getDiscussions,
   getDiscussionReplies,
   createDiscussionReply,
+  updateDiscussionReply,
+  deleteDiscussionReply,
+  updateDiscussion,
+  deleteDiscussion,
   type Discussion as DiscussionType,
   type DiscussionReply,
 } from "../service/discussion";
+import {
+  connectSocket,
+  disconnectSocket,
+  socket,
+} from "../service/socket";
 
 function Discussion() {
   const [discussions, setDiscussions] = useState<DiscussionType[]>([]);
@@ -31,8 +42,21 @@ function Discussion() {
   const [expandedDiscussions, setExpandedDiscussions] = useState<string[]>([]);
   const [replyInputs, setReplyInputs] = useState<Record<string, string>>({});
   const [replyLoading, setReplyLoading] = useState<string | null>(null);
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editReplyContent, setEditReplyContent] = useState("");
+  const [replyActionLoading, setReplyActionLoading] = useState(false);
   const [replyErrors, setReplyErrors] = useState<Record<string, string>>({});
+
+  const [editingDiscussionId, setEditingDiscussionId] = useState<string | null>(null);
+  const [editDiscussionTitle, setEditDiscussionTitle] = useState("");
+  const [editDiscussionContent, setEditDiscussionContent] = useState("");
+  const [discussionActionLoading, setDiscussionActionLoading] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const currentUserId = useSelector(
+    (state: RootState) => state.auth.user?._id
+  );
 
   const fetchDiscussions = async () => {
     try {
@@ -49,6 +73,124 @@ function Discussion() {
 
   useEffect(() => {
     fetchDiscussions();
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+
+    if (!token) return;
+
+    connectSocket(token);
+
+    return () => {
+      disconnectSocket();
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleNewDiscussion = (newDiscussion: DiscussionType) => {
+      setDiscussions((current) => {
+        const exists = current.some(
+          (discussion) => discussion._id === newDiscussion._id
+        );
+
+        if (exists) return current;
+
+        return [newDiscussion, ...current];
+      });
+    };
+
+    const handleUpdatedDiscussion = (updatedDiscussion: DiscussionType) => {
+      setDiscussions((current) =>
+        current.map((discussion) =>
+          discussion._id === updatedDiscussion._id
+            ? updatedDiscussion
+            : discussion
+        )
+      );
+    };
+
+    const handleDeletedDiscussion = (payload: string | { discussionId: string }) => {
+      const deletedId =
+        typeof payload === "string" ? payload : payload.discussionId;
+
+      setDiscussions((current) =>
+        current.filter((discussion) => discussion._id !== deletedId)
+      );
+
+      setReplies((current) => {
+        const updated = { ...current };
+        delete updated[deletedId];
+        return updated;
+      });
+
+      setExpandedDiscussions((current) =>
+        current.filter((id) => id !== deletedId)
+      );
+    };
+
+    socket.on("discussion:new", handleNewDiscussion);
+    socket.on("discussion:updated", handleUpdatedDiscussion);
+    socket.on("discussion:deleted", handleDeletedDiscussion);
+
+    return () => {
+      socket.off("discussion:new", handleNewDiscussion);
+      socket.off("discussion:updated", handleUpdatedDiscussion);
+      socket.off("discussion:deleted", handleDeletedDiscussion);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleNewReply = (newReply: DiscussionReply) => {
+      const discussionId = newReply.discussionId;
+
+      setReplies((current) => {
+        const existingReplies = current[discussionId] || [];
+        const exists = existingReplies.some(
+          (reply) => reply._id === newReply._id
+        );
+
+        if (exists) return current;
+
+        return {
+          ...current,
+          [discussionId]: [...existingReplies, newReply],
+        };
+      });
+    };
+
+    const handleUpdatedReply = (updatedReply: DiscussionReply) => {
+      const discussionId = updatedReply.discussionId;
+
+      setReplies((current) => ({
+        ...current,
+        [discussionId]: (current[discussionId] || []).map((reply) =>
+          reply._id === updatedReply._id ? updatedReply : reply
+        ),
+      }));
+    };
+
+    const handleDeletedReply = (deletedReply: {
+      _id: string;
+      discussionId: string;
+    }) => {
+      setReplies((current) => ({
+        ...current,
+        [deletedReply.discussionId]: (
+          current[deletedReply.discussionId] || []
+        ).filter((reply) => reply._id !== deletedReply._id),
+      }));
+    };
+
+    socket.on("reply:new", handleNewReply);
+    socket.on("reply:updated", handleUpdatedReply);
+    socket.on("reply:deleted", handleDeletedReply);
+
+    return () => {
+      socket.off("reply:new", handleNewReply);
+      socket.off("reply:updated", handleUpdatedReply);
+      socket.off("reply:deleted", handleDeletedReply);
+    };
   }, []);
 
   const handleCreateDiscussion = async (
@@ -94,17 +236,93 @@ function Discussion() {
     }
   };
 
+  const handleStartEditDiscussion = (discussion: DiscussionType) => {
+    setEditingDiscussionId(discussion._id);
+    setEditDiscussionTitle(discussion.title);
+    setEditDiscussionContent(discussion.content);
+  };
+
+  const handleCancelEditDiscussion = () => {
+    setEditingDiscussionId(null);
+    setEditDiscussionTitle("");
+    setEditDiscussionContent("");
+  };
+
+  const handleUpdateDiscussion = async (discussionId: string) => {
+    if (!editDiscussionTitle.trim() || !editDiscussionContent.trim()) {
+      setError("Please enter both a title and discussion content.");
+      return;
+    }
+
+    try {
+      setDiscussionActionLoading(true);
+      setError("");
+
+      const updatedDiscussion = await updateDiscussion(discussionId, {
+        title: editDiscussionTitle.trim(),
+        content: editDiscussionContent.trim(),
+      });
+
+      setDiscussions((current) =>
+        current.map((discussion) =>
+          discussion._id === discussionId ? updatedDiscussion : discussion
+        )
+      );
+
+      handleCancelEditDiscussion();
+    } catch {
+      setError("Unable to update discussion. Please try again.");
+    } finally {
+      setDiscussionActionLoading(false);
+    }
+  };
+
+  const handleDeleteDiscussion = async (discussionId: string) => {
+    if (!window.confirm("Are you sure you want to delete this discussion?")) {
+      return;
+    }
+
+    try {
+      setDiscussionActionLoading(true);
+      setError("");
+
+      await deleteDiscussion(discussionId);
+
+      setDiscussions((current) =>
+        current.filter((discussion) => discussion._id !== discussionId)
+      );
+
+      setReplies((current) => {
+        const updated = { ...current };
+        delete updated[discussionId];
+        return updated;
+      });
+
+      setExpandedDiscussions((current) =>
+        current.filter((id) => id !== discussionId)
+      );
+    } catch {
+      setError("Unable to delete discussion. Please try again.");
+    } finally {
+      setDiscussionActionLoading(false);
+    }
+  };
+
   const toggleReplies = async (discussionId: string) => {
     const isExpanded = expandedDiscussions.includes(discussionId);
 
     if (isExpanded) {
+      socket.emit("discussion:leave", discussionId);
+
       setExpandedDiscussions((current) =>
         current.filter((id) => id !== discussionId)
       );
+
       return;
     }
 
     setExpandedDiscussions((current) => [...current, discussionId]);
+    socket.emit("discussion:join", discussionId);
 
     try {
       setReplyErrors((current) => ({
@@ -143,10 +361,19 @@ function Discussion() {
         replyContent
       );
 
-      setReplies((current) => ({
-        ...current,
-        [discussionId]: [...(current[discussionId] || []), newReply],
-      }));
+      setReplies((current) => {
+        const existingReplies = current[discussionId] || [];
+        const exists = existingReplies.some(
+          (reply) => reply._id === newReply._id
+        );
+
+        if (exists) return current;
+
+        return {
+          ...current,
+          [discussionId]: [...existingReplies, newReply],
+        };
+      });
 
       setReplyInputs((current) => ({
         ...current,
@@ -159,6 +386,70 @@ function Discussion() {
       }));
     } finally {
       setReplyLoading(null);
+    }
+  };
+
+  const handleUpdateReply = async (replyId: string, discussionId: string) => {
+    if (!editReplyContent.trim()) return;
+
+    try {
+      setReplyActionLoading(true);
+      setReplyErrors((current) => ({
+        ...current,
+        [discussionId]: "",
+      }));
+
+      const updatedReply = await updateDiscussionReply(
+        replyId,
+        editReplyContent.trim()
+      );
+
+      setReplies((current) => ({
+        ...current,
+        [discussionId]: (current[discussionId] || []).map((reply) =>
+          reply._id === replyId ? updatedReply : reply
+        ),
+      }));
+
+      setEditingReplyId(null);
+      setEditReplyContent("");
+    } catch {
+      setReplyErrors((current) => ({
+        ...current,
+        [discussionId]: "Unable to update comment. Please try again.",
+      }));
+    } finally {
+      setReplyActionLoading(false);
+    }
+  };
+
+  const handleDeleteReply = async (replyId: string, discussionId: string) => {
+    if (!window.confirm("Are you sure you want to delete this comment?")) {
+      return;
+    }
+
+    try {
+      setReplyActionLoading(true);
+      setReplyErrors((current) => ({
+        ...current,
+        [discussionId]: "",
+      }));
+
+      await deleteDiscussionReply(replyId);
+
+      setReplies((current) => ({
+        ...current,
+        [discussionId]: (current[discussionId] || []).filter(
+          (reply) => reply._id !== replyId
+        ),
+      }));
+    } catch {
+      setReplyErrors((current) => ({
+        ...current,
+        [discussionId]: "Unable to delete comment. Please try again.",
+      }));
+    } finally {
+      setReplyActionLoading(false);
     }
   };
 
@@ -332,47 +623,121 @@ function Discussion() {
                 key={discussion._id}
                 className="rounded-2xl border border-[#E5EBDD] bg-white p-6 shadow-sm"
               >
-                <div className="mb-4 flex items-center gap-3">
-                  {discussion.userId?.profileImage ? (
-                    <img
-                      src={discussion.userId.profileImage}
-                      alt={discussion.userId.name}
-                      className="h-10 w-10 rounded-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#DCE8D5] font-semibold text-[#4F7049]">
-                      {discussion.userId?.name?.charAt(0).toUpperCase() || "U"}
-                    </div>
-                  )}
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    {discussion.userId?.profileImage ? (
+                      <img
+                        src={discussion.userId.profileImage}
+                        alt={discussion.userId.name}
+                        className="h-10 w-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#DCE8D5] font-semibold text-[#4F7049]">
+                        {discussion.userId?.name?.charAt(0).toUpperCase() || "U"}
+                      </div>
+                    )}
 
-                  <div>
-                    <p className="font-semibold text-[#374638]">
-                      {discussion.userId?.name || "Student"}
-                    </p>
-                    <p className="text-xs text-[#879183]">
-                      {new Date(discussion.createdAt).toLocaleString()}
-                    </p>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-[#374638]">
+                        {discussion.userId?.name || "Student"}
+                      </p>
+                      <p className="text-xs text-[#879183]">
+                        {new Date(discussion.createdAt).toLocaleString()}
+                      </p>
+                    </div>
                   </div>
+
+                  {currentUserId === discussion.userId?._id &&
+                    editingDiscussionId !== discussion._id && (
+                      <div className="flex shrink-0 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => handleStartEditDiscussion(discussion)}
+                          className="text-xs font-medium text-[#4F7049] hover:underline"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          disabled={discussionActionLoading}
+                          onClick={() => handleDeleteDiscussion(discussion._id)}
+                          className="text-xs font-medium text-[#B56D62] hover:underline disabled:opacity-50"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
                 </div>
 
-                <h2 className="text-xl font-semibold text-[#374638]">
-                  {discussion.title}
-                </h2>
+                {editingDiscussionId === discussion._id ? (
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      value={editDiscussionTitle}
+                      onChange={(event) =>
+                        setEditDiscussionTitle(event.target.value)
+                      }
+                      maxLength={150}
+                      className="w-full rounded-xl border border-[#E5EBDD] bg-[#FAFBF8] px-4 py-3 text-sm text-[#374638] outline-none focus:border-[#718B68]"
+                    />
 
-                <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#667363]">
-                  {discussion.content}
-                </p>
+                    <textarea
+                      value={editDiscussionContent}
+                      onChange={(event) =>
+                        setEditDiscussionContent(event.target.value)
+                      }
+                      rows={5}
+                      maxLength={5000}
+                      className="w-full resize-y rounded-xl border border-[#E5EBDD] bg-[#FAFBF8] px-4 py-3 text-sm text-[#374638] outline-none focus:border-[#718B68]"
+                    />
 
-                {discussion.attachment && (
-                  <a
-                    href={discussion.attachment.fileUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#F0F4EB] px-4 py-3 text-sm font-medium text-[#4F7049] hover:bg-[#E5EFE1]"
-                  >
-                    <Paperclip size={16} />
-                    {discussion.attachment.fileName}
-                  </a>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={handleCancelEditDiscussion}
+                        className="rounded-lg px-4 py-2 text-sm font-medium text-[#879183] hover:bg-[#F0F4EB]"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={
+                          discussionActionLoading ||
+                          !editDiscussionTitle.trim() ||
+                          !editDiscussionContent.trim()
+                        }
+                        onClick={() =>
+                          handleUpdateDiscussion(discussion._id)
+                        }
+                        className="rounded-lg bg-[#718B68] px-4 py-2 text-sm font-medium text-white hover:bg-[#5F7957] disabled:opacity-50"
+                      >
+                        {discussionActionLoading ? "Saving..." : "Save Changes"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="text-xl font-semibold text-[#374638]">
+                      {discussion.title}
+                    </h2>
+
+                    <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#667363]">
+                      {discussion.content}
+                    </p>
+
+                    {discussion.attachment && (
+                      <a
+                        href={discussion.attachment.fileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#F0F4EB] px-4 py-3 text-sm font-medium text-[#4F7049] hover:bg-[#E5EFE1]"
+                      >
+                        <Paperclip size={16} />
+                        {discussion.attachment.fileName}
+                      </a>
+                    )}
+                  </>
                 )}
 
                 <div className="mt-5 border-t border-[#E5EBDD] pt-4">
@@ -408,9 +773,85 @@ function Discussion() {
                                   {new Date(reply.createdAt).toLocaleString()}
                                 </p>
                               </div>
-                              <p className="mt-2 whitespace-pre-wrap text-sm text-[#667363]">
-                                {reply.content}
-                              </p>
+
+                              {editingReplyId === reply._id ? (
+                                <div className="mt-2 space-y-2">
+                                  <textarea
+                                    value={editReplyContent}
+                                    onChange={(event) =>
+                                      setEditReplyContent(event.target.value)
+                                    }
+                                    maxLength={2000}
+                                    rows={3}
+                                    className="w-full rounded-lg border border-[#E5EBDD] bg-white p-3 text-sm text-[#374638] outline-none focus:border-[#718B68]"
+                                  />
+
+                                  <div className="flex justify-end gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingReplyId(null);
+                                        setEditReplyContent("");
+                                      }}
+                                      className="rounded-lg px-3 py-1.5 text-xs font-medium text-[#879183] hover:bg-[#E5EBDD]"
+                                    >
+                                      Cancel
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      disabled={
+                                        replyActionLoading ||
+                                        !editReplyContent.trim()
+                                      }
+                                      onClick={() =>
+                                        handleUpdateReply(
+                                          reply._id,
+                                          discussion._id
+                                        )
+                                      }
+                                      className="rounded-lg bg-[#718B68] px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50"
+                                    >
+                                      Save
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <p className="mt-2 whitespace-pre-wrap text-sm text-[#667363]">
+                                    {reply.content}
+                                  </p>
+
+                                  {currentUserId === reply.userId?._id && (
+                                    <div className="mt-3 flex justify-end gap-3">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingReplyId(reply._id);
+                                          setEditReplyContent(reply.content);
+                                        }}
+                                        className="text-xs font-medium text-[#4F7049] hover:underline"
+                                      >
+                                        Edit
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        disabled={replyActionLoading}
+                                        onClick={() =>
+                                          handleDeleteReply(
+                                            reply._id,
+                                            discussion._id
+                                          )
+                                        }
+                                        className="text-xs font-medium text-[#B56D62] hover:underline disabled:opacity-50"
+                                      >
+                                        Delete
+                                      </button>
+                                    </div>
+                                  )}
+                                </>
+                              )}
                             </div>
                           </div>
                         ))}

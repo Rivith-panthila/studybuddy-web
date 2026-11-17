@@ -49,6 +49,22 @@ export const createDiscussion = async (
 };
 
 
+export const updateDiscussion = async (
+  discussionId: string,
+  data: { title: string; content: string }
+): Promise<Discussion> => {
+  const response = await api.put(`/discussions/${discussionId}`, data);
+  return response.data.discussion;
+};
+
+export const deleteDiscussion = async (
+  discussionId: string
+): Promise<void> => {
+  await api.delete(`/discussions/${discussionId}`);
+};
+
+
+
 export interface DiscussionReply {
   _id: string;
   discussionId: string;

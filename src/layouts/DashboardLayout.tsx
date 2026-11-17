@@ -12,7 +12,9 @@ import {
   X,
   GraduationCap as Logo,
   AlertCircle,
-   MessageSquare,
+  MessageSquare,
+  Moon,
+  Sun,
 } from "lucide-react";
 import {
   NavLink,
@@ -22,6 +24,7 @@ import {
 import { useAuth } from "../hooks/useAuth";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { logoutSuccess } from "../features/auth/authSlice";
+import { useTheme } from "../context/ThemeContext";
 
 const navigation = [
   { name: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -41,6 +44,7 @@ function DashboardLayout() {
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
   const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
 
   const handleLogout = () => {
     logout();
@@ -111,6 +115,15 @@ function DashboardLayout() {
         </div>
 
         <button
+          type="button"
+          onClick={toggleTheme}
+          className="mb-3 flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-[#526052] transition hover:bg-[#F0F4EB]"
+        >
+          {theme === "light" ? <Moon size={19} /> : <Sun size={19} />}
+          {theme === "light" ? "Dark Mode" : "Light Mode"}
+        </button>
+
+        <button
           onClick={() => setShowLogoutConfirm(true)}
           className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm text-[#B56D62] transition hover:bg-[#F9EEEA]"
         >
@@ -123,12 +136,10 @@ function DashboardLayout() {
 
   return (
     <div className="min-h-screen bg-[#F5F7F0]">
-      {/* Desktop Sidebar */}
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-[#E5EBDD] bg-white lg:flex">
         {sidebarContent}
       </aside>
 
-      {/* Mobile Header */}
       <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[#E5EBDD] bg-white px-5 lg:hidden">
         <div className="flex items-center gap-2 text-[#374638]">
           <Logo className="text-[#718B68]" />
@@ -144,7 +155,6 @@ function DashboardLayout() {
         </button>
       </header>
 
-      {/* Mobile Sidebar */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
@@ -159,12 +169,10 @@ function DashboardLayout() {
         </div>
       )}
 
-      {/* Page Content */}
       <main className="min-h-screen min-w-0 lg:ml-72">
         <Outlet />
       </main>
 
-      {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"

@@ -16,7 +16,10 @@ import {
   GraduationCap,
   Upload,
   ChevronRight,
+  Moon,
+  Sun,
 } from "lucide-react";
+import { useTheme } from "../context/ThemeContext";
 
 const features = [
   {
@@ -86,8 +89,21 @@ const steps = [
 
 function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { theme, toggleTheme } = useTheme();
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  const themeButton = (
+    <button
+      type="button"
+      onClick={toggleTheme}
+      className="flex items-center justify-center gap-2 rounded-xl border border-[#C9D7C1] bg-white px-3 py-2.5 text-sm font-medium text-[#374638] shadow-sm transition hover:bg-[#F0F4EB]"
+      aria-label="Toggle theme"
+    >
+      {theme === "light" ? <Moon size={17} /> : <Sun size={17} />}
+      <span>{theme === "light" ? "Dark Mode" : "Light Mode"}</span>
+    </button>
+  );
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#F5F7F0] text-[#374638]">
@@ -122,7 +138,9 @@ function Home() {
             </a>
           </div>
 
-          <div className="hidden items-center gap-5 md:flex">
+          <div className="hidden items-center gap-4 md:flex">
+            {themeButton}
+
             <a
               href="/login"
               className="text-sm font-medium text-[#52634F] transition hover:text-[#374638]"
@@ -153,11 +171,22 @@ function Home() {
               <a href="#features" onClick={closeMobileMenu}>Features</a>
               <a href="#how-it-works" onClick={closeMobileMenu}>How It Works</a>
               <a href="#about" onClick={closeMobileMenu}>About</a>
-              <div className="flex gap-3 border-t border-[#E5EBDD] pt-4">
-                <a href="/login" className="flex-1 rounded-lg border border-[#C9D7C1] py-3 text-center">
+
+              <div className="border-t border-[#E5EBDD] pt-4">
+                {themeButton}
+              </div>
+
+              <div className="flex gap-3">
+                <a
+                  href="/login"
+                  className="flex-1 rounded-lg border border-[#C9D7C1] py-3 text-center"
+                >
                   Log in
                 </a>
-                <a href="/register" className="flex-1 rounded-lg bg-[#718B68] py-3 text-center font-semibold text-white">
+                <a
+                  href="/register"
+                  className="flex-1 rounded-lg bg-[#718B68] py-3 text-center font-semibold text-white"
+                >
                   Get Started
                 </a>
               </div>

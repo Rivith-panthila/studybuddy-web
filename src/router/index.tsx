@@ -13,8 +13,10 @@ import Subjects from "../pages/Subjects";
 import Assignments from "../pages/Assignments";
 import Profile from "../pages/Profile";
 import StudyPlanner from "../pages/StudyPlanner";
+import Discussion from "../pages/Discussion";
 
 import DashboardLayout from "../layouts/DashboardLayout";
+
 
 const router = createBrowserRouter([
   {
@@ -65,6 +67,10 @@ const router = createBrowserRouter([
         path: "/profile",
         element: <Profile />,
       },
+      {
+  path: "/discussion",
+  element: <Discussion />,
+},
     ],
   },
 ]);

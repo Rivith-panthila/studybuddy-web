@@ -12,6 +12,7 @@ import {
   X,
   GraduationCap as Logo,
   AlertCircle,
+   MessageSquare,
 } from "lucide-react";
 import {
   NavLink,
@@ -28,6 +29,7 @@ const navigation = [
   { name: "Assignments", path: "/assignments", icon: ClipboardList },
   { name: "Calendar", path: "/calendar", icon: CalendarDays },
   { name: "Study Planner", path: "/study-planner", icon: GraduationCap },
+  { name: "Discussion", path: "/discussion", icon: MessageSquare },
   { name: "Profile", path: "/profile", icon: UserRound },
 ];
 

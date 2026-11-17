@@ -11,6 +11,7 @@ import {
   Menu,
   X,
   GraduationCap as Logo,
+  AlertCircle,
 } from "lucide-react";
 import {
   NavLink,
@@ -32,35 +33,36 @@ const navigation = [
 
 function DashboardLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const { logout } = useAuth();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.auth.user);
-
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
     dispatch(logoutSuccess());
     setMobileMenuOpen(false);
+    setShowLogoutConfirm(false);
     navigate("/login");
   };
 
   const sidebarContent = (
     <>
-      <div className="flex h-20 items-center gap-3 border-b border-white/10 px-6">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/15 text-blue-400">
+      <div className="flex h-20 items-center gap-3 border-b border-[#E5EBDD] px-6">
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#DCE8D5] text-[#718B68]">
           <Logo size={25} />
         </div>
 
         <div>
-          <h1 className="text-xl font-bold text-white">StudyBuddy</h1>
-          <p className="text-xs text-gray-500">Your learning partner</p>
+          <h1 className="text-xl font-bold text-[#374638]">StudyBuddy</h1>
+          <p className="text-xs text-[#879183]">Your learning partner</p>
         </div>
       </div>
 
       <div className="px-4 pt-8">
-        <p className="mb-4 px-3 text-xs font-semibold uppercase tracking-widest text-gray-500">
+        <p className="mb-4 px-3 text-xs font-semibold uppercase tracking-widest text-[#879183]">
           Main Menu
         </p>
 
@@ -77,8 +79,8 @@ function DashboardLayout() {
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition ${
                     isActive
-                      ? "bg-blue-500/15 text-blue-400"
-                      : "text-gray-400 hover:bg-white/5 hover:text-white"
+                      ? "bg-[#DCE8D5] text-[#4F7049]"
+                      : "text-[#697566] hover:bg-[#F0F4EB] hover:text-[#374638]"
                   }`
                 }
               >
@@ -90,25 +92,25 @@ function DashboardLayout() {
         </nav>
       </div>
 
-      <div className="mt-auto border-t border-white/10 p-4">
-        <div className="mb-4 flex items-center gap-3 rounded-xl bg-white/5 p-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500/20 font-semibold text-blue-400">
+      <div className="mt-auto border-t border-[#E5EBDD] p-4">
+        <div className="mb-4 flex items-center gap-3 rounded-xl bg-[#F0F4EB] p-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#DCE8D5] font-semibold text-[#4F7049]">
             {user?.name?.charAt(0).toUpperCase() || "U"}
           </div>
 
           <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-white">
+            <p className="truncate text-sm font-semibold text-[#374638]">
               {user?.name || "Student"}
             </p>
-            <p className="truncate text-xs text-gray-500">
+            <p className="truncate text-xs text-[#879183]">
               {user?.email || "StudyBuddy User"}
             </p>
           </div>
         </div>
 
         <button
-          onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm text-red-400 transition hover:bg-red-500/10"
+          onClick={() => setShowLogoutConfirm(true)}
+          className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm text-[#B56D62] transition hover:bg-[#F9EEEA]"
         >
           <LogOut size={19} />
           Logout
@@ -118,22 +120,22 @@ function DashboardLayout() {
   );
 
   return (
-    <div className="min-h-screen bg-[#080d1b]">
+    <div className="min-h-screen bg-[#F5F7F0]">
       {/* Desktop Sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-white/10 bg-[#0d1528] lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-72 flex-col border-r border-[#E5EBDD] bg-white lg:flex">
         {sidebarContent}
       </aside>
 
       {/* Mobile Header */}
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 bg-[#0d1528] px-5 lg:hidden">
-        <div className="flex items-center gap-2 text-white">
-          <Logo className="text-blue-400" />
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-[#E5EBDD] bg-white px-5 lg:hidden">
+        <div className="flex items-center gap-2 text-[#374638]">
+          <Logo className="text-[#718B68]" />
           <span className="font-bold">StudyBuddy</span>
         </div>
 
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="rounded-lg p-2 text-white hover:bg-white/10"
+          className="rounded-lg p-2 text-[#374638] hover:bg-[#F0F4EB]"
           aria-label="Toggle navigation"
         >
           {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -144,12 +146,12 @@ function DashboardLayout() {
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
-            className="absolute inset-0 bg-black/60"
+            className="absolute inset-0 bg-black/30"
             onClick={() => setMobileMenuOpen(false)}
             aria-label="Close navigation"
           />
 
-          <aside className="relative flex h-full w-72 flex-col bg-[#0d1528]">
+          <aside className="relative flex h-full w-72 flex-col bg-white">
             {sidebarContent}
           </aside>
         </div>
@@ -159,6 +161,55 @@ function DashboardLayout() {
       <main className="min-h-screen min-w-0 lg:ml-72">
         <Outlet />
       </main>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutConfirm && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
+          onClick={() => setShowLogoutConfirm(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-title"
+            className="w-full max-w-sm rounded-2xl border border-[#E5EBDD] bg-white p-7 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#F9EEEA] text-[#B56D62]">
+              <AlertCircle size={28} />
+            </div>
+
+            <h2
+              id="logout-title"
+              className="text-center text-xl font-bold text-[#374638]"
+            >
+              Confirm Logout
+            </h2>
+
+            <p className="mt-3 text-center text-sm leading-6 text-[#879183]">
+              Are you sure you want to logout from your StudyBuddy account?
+            </p>
+
+            <div className="mt-7 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="flex-1 rounded-xl border border-[#E5EBDD] bg-[#F5F7F0] px-4 py-3 text-sm font-semibold text-[#526052] transition hover:bg-[#F0F4EB]"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex-1 rounded-xl bg-[#B56D62] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#A75B50]"
+              >
+                Yes, Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

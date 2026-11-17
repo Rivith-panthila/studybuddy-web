@@ -1,17 +1,24 @@
+
 @import "tailwindcss";
 
 :root {
   font-family: Inter, Arial, sans-serif;
-  color: #ffffff;
-  background: #080d1b;
+  color: #374638;
+  background: #F5F7F0;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background: #F5F7F0;
+  color: #374638;
 }
 
 button,

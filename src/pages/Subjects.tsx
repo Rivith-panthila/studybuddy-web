@@ -36,20 +36,16 @@ function Subjects() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState("");
 
-  // LOAD SUBJECTS FROM REDUX
   useEffect(() => {
     dispatch(fetchSubjects());
   }, [dispatch]);
 
-  // ADD OR UPDATE SUBJECT
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const trimmedName = subjectName.trim();
 
-    if (!trimmedName) {
-      return;
-    }
+    if (!trimmedName) return;
 
     try {
       setSaving(true);
@@ -75,21 +71,18 @@ function Subjects() {
     }
   };
 
-  // EDIT SUBJECT
   const handleEdit = (subject: Subject) => {
     setSubjectName(subject.name);
     setEditingId(subject._id);
     dispatch(clearSubjectsError());
   };
 
-  // CANCEL EDIT
   const handleCancelEdit = () => {
     setSubjectName("");
     setEditingId(null);
     dispatch(clearSubjectsError());
   };
 
-  // DELETE SUBJECT
   const handleDelete = async (id: string) => {
     const confirmed = window.confirm(
       "Are you sure you want to delete this subject?"
@@ -115,12 +108,12 @@ function Subjects() {
   };
 
   return (
-    <div className="min-h-screen bg-[#080d1b] px-6 py-8 text-white md:px-10">
+    <div className="min-h-screen bg-[#F5F7F0] px-6 py-8 text-[#374638] md:px-10">
       <div className="mx-auto max-w-5xl">
 
         <Link
           to="/dashboard"
-          className="mb-8 inline-flex items-center gap-2 text-sm text-gray-400 transition hover:text-white"
+          className="mb-8 inline-flex items-center gap-2 text-sm text-[#879183] transition hover:text-[#4F7049]"
         >
           <ArrowLeft size={17} />
           Back to Dashboard
@@ -129,14 +122,16 @@ function Subjects() {
         {/* PAGE HEADER */}
         <div className="mb-8">
           <div className="mb-3 flex items-center gap-3">
-            <div className="rounded-xl bg-purple-500/15 p-3 text-purple-400">
+            <div className="rounded-xl bg-[#DCE8D5] p-3 text-[#718B68]">
               <BookOpen size={25} />
             </div>
 
             <div>
-              <h1 className="text-3xl font-bold">My Subjects</h1>
+              <h1 className="text-3xl font-bold text-[#374638]">
+                My Subjects
+              </h1>
 
-              <p className="mt-1 text-sm text-gray-400">
+              <p className="mt-1 text-sm text-[#879183]">
                 Organize and manage your study subjects.
               </p>
             </div>
@@ -144,8 +139,8 @@ function Subjects() {
         </div>
 
         {/* ADD / EDIT SUBJECT FORM */}
-        <div className="mb-8 rounded-2xl border border-white/10 bg-[#111a2e] p-6">
-          <h2 className="mb-4 text-lg font-semibold">
+        <div className="mb-8 rounded-2xl border border-[#E5EBDD] bg-white p-6 shadow-sm">
+          <h2 className="mb-4 text-lg font-semibold text-[#374638]">
             {editingId ? "Edit Subject" : "Add a New Subject"}
           </h2>
 
@@ -159,13 +154,13 @@ function Subjects() {
               onChange={(e) => setSubjectName(e.target.value)}
               placeholder="Enter subject name..."
               disabled={saving}
-              className="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#080d1b] px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-purple-500"
+              className="min-w-0 flex-1 rounded-xl border border-[#E5EBDD] bg-[#F8FAF5] px-4 py-3 text-[#374638] outline-none transition placeholder:text-[#A2AA9D] focus:border-[#9BB391] focus:ring-2 focus:ring-[#DCE8D5]"
             />
 
             <button
               type="submit"
               disabled={saving || !subjectName.trim()}
-              className="flex items-center justify-center gap-2 rounded-xl bg-purple-600 px-6 py-3 font-medium transition hover:bg-purple-500 disabled:cursor-not-allowed disabled:opacity-60"
+              className="flex items-center justify-center gap-2 rounded-xl bg-[#718B68] px-6 py-3 font-medium text-white transition hover:bg-[#5F7957] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? (
                 <Loader2 size={18} className="animate-spin" />
@@ -185,7 +180,7 @@ function Subjects() {
                 type="button"
                 onClick={handleCancelEdit}
                 disabled={saving}
-                className="flex items-center justify-center gap-2 rounded-xl border border-white/10 px-5 py-3 text-gray-300 transition hover:bg-white/5"
+                className="flex items-center justify-center gap-2 rounded-xl border border-[#E5EBDD] px-5 py-3 text-[#718071] transition hover:bg-[#F0F4EB]"
               >
                 <X size={18} />
                 Cancel
@@ -194,7 +189,7 @@ function Subjects() {
           </form>
 
           {error && (
-            <p className="mt-4 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <p className="mt-4 rounded-lg border border-[#F0D8D2] bg-[#F9EEEA] px-4 py-3 text-sm text-[#B56D62]">
               {error}
             </p>
           )}
@@ -202,9 +197,11 @@ function Subjects() {
 
         {/* SUBJECT COUNT */}
         <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-xl font-semibold">All Subjects</h2>
+          <h2 className="text-xl font-semibold text-[#374638]">
+            All Subjects
+          </h2>
 
-          <span className="rounded-full bg-purple-500/15 px-3 py-1 text-sm text-purple-300">
+          <span className="rounded-full bg-[#DCE8D5] px-3 py-1 text-sm font-medium text-[#587451]">
             {subjects.length} Subjects
           </span>
         </div>
@@ -213,22 +210,22 @@ function Subjects() {
         {loading ? (
           <div className="flex justify-center py-16">
             <Loader2
-              className="animate-spin text-purple-400"
+              className="animate-spin text-[#718B68]"
               size={32}
             />
           </div>
         ) : subjects.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-white/15 bg-[#111a2e]/50 px-6 py-16 text-center">
+          <div className="rounded-2xl border border-dashed border-[#C9D7C1] bg-white px-6 py-16 text-center">
             <BookOpen
               size={40}
-              className="mx-auto mb-4 text-gray-500"
+              className="mx-auto mb-4 text-[#A3B29B]"
             />
 
-            <h3 className="mb-2 text-lg font-semibold">
+            <h3 className="mb-2 text-lg font-semibold text-[#374638]">
               No subjects yet
             </h3>
 
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-[#879183]">
               Add your first subject using the form above.
             </p>
           </div>
@@ -237,10 +234,10 @@ function Subjects() {
             {subjects.map((subject) => (
               <div
                 key={subject._id}
-                className="rounded-2xl border border-white/10 bg-[#111a2e] p-5 transition hover:border-purple-500/40"
+                className="rounded-2xl border border-[#E5EBDD] bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:border-[#B9CCAF] hover:shadow-md"
               >
                 <div className="mb-5 flex items-start justify-between">
-                  <div className="rounded-xl bg-purple-500/15 p-3 text-purple-400">
+                  <div className="rounded-xl bg-[#DCE8D5] p-3 text-[#718B68]">
                     <BookOpen size={22} />
                   </div>
 
@@ -249,7 +246,7 @@ function Subjects() {
                       type="button"
                       onClick={() => handleEdit(subject)}
                       title="Edit subject"
-                      className="rounded-lg p-2 text-gray-400 transition hover:bg-blue-500/10 hover:text-blue-400"
+                      className="rounded-lg p-2 text-[#879183] transition hover:bg-[#F0F4EB] hover:text-[#718B68]"
                     >
                       <Pencil size={17} />
                     </button>
@@ -259,7 +256,7 @@ function Subjects() {
                       onClick={() => handleDelete(subject._id)}
                       disabled={deletingId === subject._id}
                       title="Delete subject"
-                      className="rounded-lg p-2 text-gray-400 transition hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
+                      className="rounded-lg p-2 text-[#A69A91] transition hover:bg-[#F9EEEA] hover:text-[#B56D62] disabled:opacity-50"
                     >
                       {deletingId === subject._id ? (
                         <Loader2
@@ -273,11 +270,11 @@ function Subjects() {
                   </div>
                 </div>
 
-                <h3 className="break-words text-lg font-semibold">
+                <h3 className="break-words text-lg font-semibold text-[#374638]">
                   {subject.name}
                 </h3>
 
-                <p className="mt-2 text-xs text-gray-500">
+                <p className="mt-2 text-xs text-[#879183]">
                   Study subject
                 </p>
               </div>

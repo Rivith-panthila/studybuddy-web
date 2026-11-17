@@ -3,22 +3,65 @@
 
 :root {
   font-family: Inter, Arial, sans-serif;
-  color: #374638;
-  background: #F5F7F0;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+
+  --bg: #F5F7F0;
+  --text: #374638;
+  --card: #FFFFFF;
+  --border: #E5EBDD;
+  --accent: #718B68;
+  --muted: #879183;
+}
+
+:root.dark {
+  --bg: #18211A;
+  --text: #E8EEE4;
+  --card: #253328;
+  --border: #3B4B3D;
+  --accent: #A8BE9D;
+  --muted: #B0BBAE;
+  color-scheme: dark;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background: #F5F7F0;
-  color: #374638;
+  background: var(--bg);
+  color: var(--text);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.dark body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.dark .bg-white {
+  background-color: var(--card) !important;
+}
+
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: var(--text) !important;
+}
+
+.dark .border-gray-100,
+.dark .border-gray-200,
+.dark .border-gray-300 {
+  border-color: var(--border) !important;
 }
 
 button,

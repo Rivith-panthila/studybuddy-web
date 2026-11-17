@@ -55,6 +55,13 @@ function Dashboard() {
     },
   ];
 
+  const iconColors = [
+    "bg-[#EAF2E5] text-[#718B68] ring-1 ring-[#DCE8D5]",
+    "bg-[#E8EFE5] text-[#5F7957] ring-1 ring-[#DCE8D5]",
+    "bg-[#F8F0E3] text-[#A98753] ring-1 ring-[#EFE2CA]",
+    "bg-[#E4F0E3] text-[#4F7049] ring-1 ring-[#D3E5D0]",
+  ];
+
   return (
     <div className="min-h-screen bg-[#F5F7F0] p-6 text-[#374638] md:p-10">
       <div className="mx-auto max-w-7xl">
@@ -101,25 +108,20 @@ function Dashboard() {
               {statCards.map((card, index) => {
                 const Icon = card.icon;
 
-                const iconColors = [
-                  "bg-[#DCE8D5] text-[#718B68]",
-                  "bg-[#E5EBDD] text-[#718B68]",
-                  "bg-[#F3E9D8] text-[#A98753]",
-                  "bg-[#DCE8D5] text-[#4F7049]",
-                ];
-
                 return (
                   <div
                     key={card.title}
-                    className="rounded-2xl border border-[#E5EBDD] bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-md"
+                    className="group rounded-2xl border border-[#E5EBDD] bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                   >
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-[#879183]">
                         {card.title}
                       </p>
 
-                      <div className={`rounded-xl p-3 ${iconColors[index]}`}>
-                        <Icon className="h-5 w-5" />
+                      <div
+                        className={`rounded-2xl p-3.5 shadow-sm transition-transform duration-300 group-hover:scale-110 ${iconColors[index]}`}
+                      >
+                        <Icon className="h-6 w-6 stroke-[1.8]" />
                       </div>
                     </div>
 
